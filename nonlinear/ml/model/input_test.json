@@ -1,0 +1,15 @@
+{
+	"age": 22,
+	"workSector": "Federal-gov",
+	"education": "Masters",
+	"educationNum": 16,
+	"statusMarriage": "Married-civ-spouse",
+	"career": "Exec-managerial",
+	"relationship": "Own-child",
+	"race": "White",
+	"sex": "Female",
+	"gainedCapital": 0,
+	"lostCapital": 0,
+	"hoursPerWeek": "66",
+	"country": "United-States"
+}

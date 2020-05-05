@@ -1,48 +1,58 @@
 import os
-import keras
 import json
-from keras.models import model_from_json
-import tensorflow as tf
-from tensorflow import feature_column
-from tensorflow.keras import layers
-import tensorflow as tf
+import numpy as np
+from tensorflow.keras.models import load_model
+
 
 class IncomePredictionModel(object):
-    def __init__(self, map_dict, model_json_path, model_weights_path):
+    def __init__(self, map_dict, ckpt_path):
         self.map_dict = map_dict
+        self.target_inv_map = {v: k for k, v in self.map_dict['income'].items()}
+        assert os.path.exists(ckpt_path)
+        self.model = load_model(ckpt_path)
 
-        # assert os.path.exists(model_json_path)
-        # assert os.path.exists(model_weights_path)
-        #
-        # with open(model_json_path, 'r') as f:
-        #     loaded_model = model_from_json(f.read())
-        #
-        # # load weights into new model
-        # loaded_model.load_weights(model_weights_path)
-        # print("Loaded model from disk")
+    def predict(self, dct_to_pred):
+        input_data = self.parse_dict(dct_to_pred)
 
-        headers = ['age', 'workSector', 'education', 'educationNum', 'statusMarriage', 'career', 'relationship', 'race', 'sex', 'gainedCapital', 'lostCapital', 'hoursPerWeek', 'country']
-        feature_columns = []
-        for header in headers:
-            feature_columns.append(feature_column.numeric_column(header))
+        if input_data is not None:
+            prediction = self.model.predict(input_data)
 
-        feature_layer = tf.keras.layers.DenseFeatures(feature_columns)
+            score = prediction[0][np.argmax(prediction)]
+            pred_cls = self.target_inv_map[np.argmax(prediction)]
 
-        loaded_model = tf.keras.Sequential([
-            feature_layer,
-            layers.Dense(128, activation='relu'),
-            layers.Dense(128, activation='relu'),
-            layers.Dense(1)
-        ])
+            return {"score": score,
+                    "prediction": pred_cls}
+        else:
+            return {"Error! input_data is None"}
 
-        loaded_model.compile(optimizer='adam',
-                             loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-                             metrics=['accuracy'])
-        loaded_model.load_weights('../ckpts/model.h5')
+    def parse_dict(self, dct):
+        try:
+            age = int(dct['age'])
+            workSector = self.map_dict['workSector'][dct['workSector'].lower()]
+            education = self.map_dict['education'][dct['education'].lower()]
+            educationNum = int(dct['educationNum'])
+            statusMarriage = self.map_dict['statusMarriage'][dct['statusMarriage'].lower()]
+            career = self.map_dict['career'][dct['career'].lower()]
+            relationship = self.map_dict['relationship'][dct['relationship'].lower()]
+            race = self.map_dict['race'][dct['race'].lower()]
+            sex = self.map_dict['sex'][dct['sex'].lower()]
+            gainedCapital = int(dct['gainedCapital'])
+            lostCapital = int(dct['lostCapital'])
+            hoursPerWeek = int(dct['hoursPerWeek'])
+            country = self.map_dict['country'][dct['country'].lower()]
+
+            return np.array([[age, workSector, education, educationNum, statusMarriage, career, relationship,
+                              race, sex, gainedCapital, lostCapital, hoursPerWeek, country]])
+        except Exception as e:
+            return None
 
 
 with open('mapping.json', 'r') as f:
     map_dct = json.load(f)
 
-model = IncomePredictionModel(map_dct, "../ckpts/model.json", "../ckpts/model.h5")
-print('a')
+with open('input_test.json', 'r') as f:
+    input_dct = json.load(f)
+
+model = IncomePredictionModel(map_dct, "../ckpts/model_v2/my_net_save.h5")
+prediction = model.predict(input_dct)
+print(prediction)
