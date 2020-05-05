@@ -4,6 +4,11 @@ from nonlinear.webapp.utils import init_logging
 from nonlinear.webapp.data_source.identity_store import IdentityStore
 from nonlinear.webapp.data_source.person_store import PersonStore
 from nonlinear.webapp.data_source.data_models.person import Person
+from nonlinear.webapp.config import Config
+from nonlinear.ml.model.model import load_model
+import sys
+import os
+
 
 import logging
 
@@ -16,10 +21,15 @@ def identity(payload):
     return IdentityStore.get_instance().get_identity(api_key)
 
 
+prediction_model = load_model(os.path.dirname(sys.modules[load_model.__module__].__file__))
+
 app = Flask(__name__)
 
 app.config.from_pyfile('config_file.cfg')
 app.config['JWT_AUTH_URL_RULE'] = None
+
+for k, v in app.config.items():
+    Config[k] = v
 
 jwt = JWT(app, identity_handler=identity)
 
@@ -65,7 +75,8 @@ def insert_person():
         req_json = request.get_json()
         person = Person.from_json(req_json).__dict__
         PersonStore.get_instance().insert_person(person)
-        return jsonify({'Status': 'Done'})
+        return jsonify({'Status': 'Done',
+                        'PersonID': person['id']})
     except ValueError as e:
         logging.exception('Error running insertPerson')
         return Response(str(e), status=400)
@@ -78,11 +89,29 @@ def insert_person():
 @jwt_required()
 def get_person(person_id):
     try:
-        raise NotImplemented()
+        person = PersonStore.get_instance().get_person(person_id)
+
+        person_object = person.to_rest_object()
+        prediction = prediction_model.predict(person_object)
+
+        person_object['predictedIncome'] = prediction['prediction']
+        person_object['predictionScore'] = str(prediction['score'])
+
+        return jsonify(person_object)
+    except Exception as e:
+        logging.exception('Error running getPerson')
+        return Response(str(e), status=500)
+
+
+@app.route('/listPersons', methods=['GET'])
+def list_persons():
+    try:
+        person_ids = PersonStore.get_instance().list_persons()
+        return jsonify({'person_ids': person_ids})
     except Exception as e:
         logging.exception('Error running getPerson')
         return Response(str(e), status=500)
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9000, debug=True)
+    app.run(host='0.0.0.0', port=9000, debug=False)

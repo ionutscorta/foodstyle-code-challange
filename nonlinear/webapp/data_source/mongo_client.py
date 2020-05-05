@@ -14,8 +14,11 @@ class MongoClient:
     def insert(self, data):
         self.collection.insert_one(data)
 
-    def get(self, query):
-        return self.collection.find_one(query)
+    def get(self, query=None):
+        if query is not None:
+            return self.collection.find_one(query)
+        else:
+            return self.collection.find()
 
     def prepare_db(self):
         if "DefaultDataSpecs" not in self.person_db.list_collection_names():
