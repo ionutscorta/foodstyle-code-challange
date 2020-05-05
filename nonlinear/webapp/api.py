@@ -65,7 +65,8 @@ def insert_person():
         req_json = request.get_json()
         person = Person.from_json(req_json).__dict__
         PersonStore.get_instance().insert_person(person)
-        return jsonify({'Status': 'Done'})
+        return jsonify({'Status': 'Done',
+                        'PersonID': person['id']})
     except ValueError as e:
         logging.exception('Error running insertPerson')
         return Response(str(e), status=400)
@@ -78,11 +79,20 @@ def insert_person():
 @jwt_required()
 def get_person(person_id):
     try:
-        raise NotImplemented()
+        person = PersonStore.get_instance().get_person(person_id)
+        return jsonify(person.__dict__)
     except Exception as e:
         logging.exception('Error running getPerson')
         return Response(str(e), status=500)
 
+@app.route('/listPersons', methods=['GET'])
+def list_persons():
+    try:
+        persond_ids = PersonStore.get_instance().list_persons()
+        return jsonify(persond_ids)
+    except Exception as e:
+        logging.exception('Error running getPerson')
+        return Response(str(e), status=500)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9000, debug=True)

@@ -1,4 +1,6 @@
 from nonlinear.webapp.data_source.mongo_client import MongoClient
+from nonlinear.webapp.data_source.data_models.person import Person
+import json
 
 
 class PersonStore:
@@ -25,8 +27,16 @@ class PersonStore:
         return self.mongo_client.insert(person)
 
     def get_person(self, person_id):
-        person = self.mongo_client.get({"id": person_id})
-        if person is not None:
+        person_data = self.mongo_client.get({"id": person_id})
+        if person_data is not None:
+            person = Person.to_person_object(person_data)
             return person
         else:
             raise Exception("Invalid person ID.")
+
+    def list_persons(self):
+        ids = []
+        persons = self.mongo_client.get()
+        for person in persons:
+            ids.append(person['id'])
+        return ids
