@@ -1,3 +1,5 @@
+mandatory_fields = ['name', 'age', 'work_sector', 'status_marriage', 'career', 'relationship', 'sex', 'gained_capital', 'lost_capital']
+
 class Person:
     def __init__(self, name, age, work_sector,
                  status_marriage, career, relationship, sex, gained_capital, lost_capital,
@@ -18,3 +20,22 @@ class Person:
         self.country = country if country is not None else "United-States"
 
 
+    @staticmethod
+    def from_json(data):
+        for i in mandatory_fields:
+            if i not in data.keys():
+                raise ValueError("Invalid person data.")
+        return Person(data['name'],
+                      data['age'],
+                      data['work_sector'],
+                      data['status_marriage'],
+                      data['career'],
+                      data['relationship'],
+                      data['sex'],
+                      data['gained_capital'],
+                      data['lost_capital'],
+                      data['education'] if data.get('education') is not None else None,
+                      data['education_num'] if data.get('education_num') is not None else None,
+                      data['race'] if data.get('race') is not None else None,
+                      data['hours_per_week'] if data.get('hours_per_week') is not None else None,
+                      data['country'] if data.get('hours_per_week') is not None else None)

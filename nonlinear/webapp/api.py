@@ -2,6 +2,8 @@ from flask import Flask, request, Response, jsonify
 from flask_jwt import JWT, jwt_required
 from nonlinear.webapp.utils import init_logging
 from nonlinear.webapp.data_source.identity_store import IdentityStore
+from nonlinear.webapp.data_source.person_store import PersonStore
+from nonlinear.webapp.data_source.data_models.person import Person
 
 import logging
 
@@ -42,7 +44,7 @@ def authenticate():
         return Response(str(e), status=500)
 
 
-@app.route('/generateApiKey')
+@app.route('/generateApiKey', methods=['POST'])
 def generate_api_key():
     try:
         if request.remote_addr != '127.0.0.1':
@@ -60,7 +62,13 @@ def generate_api_key():
 @jwt_required()
 def insert_person():
     try:
-        raise NotImplementedError()
+        req_json = request.get_json()
+        person = Person.from_json(req_json).__dict__
+        PersonStore.get_instance().insert_person(person)
+        return jsonify({'Status': 'Done'})
+    except ValueError as e:
+        logging.exception('Error running insertPerson')
+        return Response(str(e), status=400)
     except Exception as e:
         logging.exception('Error running insertPerson')
         return Response(str(e), status=500)
@@ -70,7 +78,7 @@ def insert_person():
 @jwt_required()
 def get_person(person_id):
     try:
-        raise NotImplementedError()
+        raise NotImplemented()
     except Exception as e:
         logging.exception('Error running getPerson')
         return Response(str(e), status=500)

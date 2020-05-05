@@ -1,4 +1,5 @@
 from nonlinear.webapp.data_source.data_models.api_key_identity import ApiKeyIdentity
+from nonlinear.webapp.data_source.mongo_client import MongoClient
 import uuid
 import datetime
 
@@ -21,14 +22,16 @@ class IdentityStore:
         else:
             IdentityStore._Instance = self
 
-        # TODO create mongo database
+        self.mongo_client = MongoClient(host="mongodb://localhost:27017/", db_name="DataStore", collection="Identity")
 
     def generate_api_key(self):
         api_identity = ApiKeyIdentity(str(uuid.uuid4()), datetime.datetime.now(tz=datetime.timezone.utc))
 
-        # TODO insert
+        self.mongo_client.insert(api_identity)
 
         return api_identity.id
 
     def get_identity(self, api_key):
-        raise NotImplementedError()
+        identity = self.mongo_client.get({"id": api_key})
+        if identity is not None:
+            return ApiKeyIdentity(identity['id'], identity_datetime=identity['identity_datetime'])
