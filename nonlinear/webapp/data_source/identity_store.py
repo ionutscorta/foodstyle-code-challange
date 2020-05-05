@@ -1,5 +1,6 @@
 from nonlinear.webapp.data_source.data_models.api_key_identity import ApiKeyIdentity
 from nonlinear.webapp.data_source.mongo_client import MongoClient
+from nonlinear.webapp.config import Config
 import uuid
 import datetime
 
@@ -22,7 +23,7 @@ class IdentityStore:
         else:
             IdentityStore._Instance = self
 
-        self.mongo_client = MongoClient(host="mongodb://localhost:27017/", db_name="DataStore", collection="Identity")
+        self.mongo_client = MongoClient(host="mongodb://{}:{}/".format(Config['MONGODB_HOST'], Config['MONGO_PORT']), db_name="DataStore", collection="Identity")
 
     def generate_api_key(self):
         api_identity = ApiKeyIdentity(str(uuid.uuid4()), datetime.datetime.now(tz=datetime.timezone.utc))
